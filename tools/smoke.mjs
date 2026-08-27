@@ -58,17 +58,30 @@ for (const vp of VIEWPORTS) {
     if (!K) return { boot: false };
     const step = 1 / 60;
     const tick = K.game.update.bind(K.game);
+    // Aim only — never move the buckets directly. The control law has to
+    // actually deliver them, which is the thing worth testing. A player who
+    // locks onto every bomb the moment it spawns is never late, so any miss
+    // is the game's fault, not theirs.
     const aimAtLowestBomb = () => {
       const bs = K.game.bombs.active;
       if (!bs.length) return;
       let low = bs[0];
       for (const b of bs) if (b.y < low.y) low = b;
-      K.game.buckets.x = low.x; K.game.buckets.targetX = low.x; K.input.target = low.x;
+      K.input.target = low.x;
     };
 
-    K.game.start();
-    for (let i = 0; i < 60 * 120; i++) { aimAtLowestBomb(); tick(step); }
-    const skilled = { wave: K.game.wave, score: K.game.score, buckets: K.game.buckets.count };
+    const playFairly = (fps, seconds) => {
+      K.game.start();
+      for (let i = 0; i < seconds * fps; i++) { aimAtLowestBomb(); tick(1 / fps); }
+      return { wave: K.game.wave, score: K.game.score, buckets: K.game.buckets.count };
+    };
+
+    const skilled = playFairly(60, 120);
+
+    // The same run at other frame rates must come out identical: motion is a
+    // function of elapsed time, not of how often we sample it.
+    const at30 = playFairly(30, 120);
+    const at120 = playFairly(120, 120);
 
     K.game.start();
     let overAt = -1;
@@ -86,7 +99,7 @@ for (const vp of VIEWPORTS) {
       K.world.layout.bomberY, K.world.layout.bucketLineY].every(Number.isFinite);
 
     return {
-      boot: true, skilled, overAt, paused, resumed, quit, finite,
+      boot: true, skilled, at30, at120, overAt, paused, resumed, quit, finite,
       dropRoom: K.world.layout.bomberY - K.world.layout.bucketLineY,
       headroom: K.world.bounds.halfH - K.world.layout.bomberY,
     };
@@ -97,7 +110,11 @@ for (const vp of VIEWPORTS) {
   if (r.boot) {
     check('renders without errors', errors.length === 0, errors.slice(0, 3).join(' | '));
     check('skilled play climbs waves', r.skilled.wave >= 4 && r.skilled.score > 400, JSON.stringify(r.skilled));
-    check('skilled play loses no buckets', r.skilled.buckets === 3);
+    check('a fair player never loses a bucket', r.skilled.buckets === 3,
+      `${r.skilled.buckets}/3 left`);
+    check('play is frame-rate independent',
+      r.at30.score === r.skilled.score && r.at120.score === r.skilled.score,
+      `30fps=${r.at30.score}  60fps=${r.skilled.score}  120fps=${r.at120.score}`);
     check('idle play reaches game over', r.overAt > 5 && r.overAt < 40, `${r.overAt.toFixed(1)}s`);
     check('pause / resume / quit', r.paused && r.resumed && r.quit);
     check('no NaN in layout or physics', r.finite);

@@ -12,8 +12,8 @@ export const CONFIG = {
   maxBuckets: 3,
   extraBucketEvery: 1000,
   bucketRadius: 0.62,     // catch half-width, world units
-  bucketMaxSpeed: 30,     // world units / second
-  bucketSmoothing: 0.012, // exponential damping constant (lower = snappier)
+  bucketMaxSpeed: 42,     // world units / second — a hard, honest speed limit
+  bucketResponse: 0.042,  // seconds to close ~63% of the gap (lower = snappier)
 
   // Playfield (world units). Height is derived from the viewport aspect.
   playWidthMax: 15,

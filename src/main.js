@@ -140,7 +140,9 @@ resize();
 /* ── Housekeeping ────────────────────────────────────────────────────── */
 
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) return;
+  // Coming back from the background: forget the old timestamp so the first
+  // frame back isn't a multi-second step.
+  if (!document.hidden) { lastFrameTime = 0; return; }
   if (game.isRunning) game.pause();
   ui.persistBest();
 });
@@ -163,14 +165,20 @@ window.addEventListener('keydown', (e) => {
 
 /* ── Frame loop ──────────────────────────────────────────────────────── */
 
-const clock = new THREE.Clock();
+let lastFrameTime = 0;
 let frameAccum = 0;
 let frameCount = 0;
 let downgradeCooldown = 6;
 
-function frame() {
+function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(clock.getDelta(), 1 / 20);
+
+  // Time the frame from the timestamp rAF hands us rather than from the clock
+  // at callback time: it tracks the display's cadence, so dt doesn't pick up
+  // jitter from when our callback happened to be scheduled.
+  if (!lastFrameTime) lastFrameTime = now;
+  const dt = Math.min(Math.max((now - lastFrameTime) / 1000, 1 / 1000), 1 / 20);
+  lastFrameTime = now;
 
   game.update(dt);
   postfx.render(world.scene, world.camera, dt);

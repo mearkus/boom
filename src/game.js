@@ -307,7 +307,7 @@ export class Game {
       if (T.t <= 0) { this.timers.splice(i, 1); T.fn(); }
     }
 
-    this.timeScale += (this.timeScaleTarget - this.timeScale) * Math.min(1, dt * 2.6);
+    this.timeScale += (this.timeScaleTarget - this.timeScale) * (1 - Math.exp(-dt * 2.6));
     const gdt = dt * this.timeScale;
     const halfW = this.world.bounds.playHalfW;
 
@@ -318,7 +318,7 @@ export class Game {
 
     // Danger vignette when the last bucket is on the line.
     const danger = this.buckets.count <= 1 && this.state !== S.OVER ? 1 : 0;
-    this.postfx.damage += (danger * (0.35 + 0.2 * Math.sin(performance.now() * 0.006)) - this.postfx.damage) * Math.min(1, dt * 3);
+    this.postfx.damage += (danger * (0.35 + 0.2 * Math.sin(performance.now() * 0.006)) - this.postfx.damage) * (1 - Math.exp(-dt * 3));
 
     switch (this.state) {
       case S.INTRO:
@@ -381,11 +381,29 @@ export class Game {
   _resolveBombs() {
     if (this.state !== S.PLAYING && this.state !== S.INTRO) return;
     const line = this.buckets.catchY;
-    for (const b of this.bombs.active.slice()) {
+    const buckets = this.buckets;
+
+    // A bomb crosses the rim partway through a frame, and the buckets are
+    // moving too. Judge each crossing at the moment it happened rather than at
+    // the end of the frame, or a fast bomb meeting a fast bucket is decided by
+    // where the bucket ended up rather than where it was.
+    const crossings = [];
+    for (const b of this.bombs.active) {
       if (b.prevY >= line && b.y <= line) {
-        if (this.buckets.catches(b.x, b.y, b.prevY)) this._onCatch(b);
-        else { this._onMiss(b); return; }
+        const fall = b.prevY - b.y;
+        const u = fall > 1e-9 ? (b.prevY - line) / fall : 0;
+        crossings.push({ bomb: b, u: THREE.MathUtils.clamp(u, 0, 1) });
       }
+    }
+    if (crossings.length === 0) return;
+
+    // Earliest crossing first, so simultaneous bombs are judged in real order.
+    crossings.sort((a, b) => a.u - b.u);
+
+    for (const c of crossings) {
+      const bucketX = buckets.prevX + (buckets.x - buckets.prevX) * c.u;
+      if (buckets.catchesAt(c.bomb.x, bucketX)) this._onCatch(c.bomb);
+      else { this._onMiss(c.bomb); return; }   // a miss detonates the rest
     }
   }
 }
