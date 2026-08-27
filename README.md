@@ -27,16 +27,21 @@ just serve the repository root.
 
 ### GitHub Pages
 
-It runs on Pages as-is — no build step, no Actions workflow needed:
+`.github/workflows/deploy.yml` publishes the site on every push to `main`
+(and on demand via *Actions → Deploy to GitHub Pages → Run workflow*).
 
-1. **Settings → Pages → Source: Deploy from a branch**
-2. Pick the branch and **`/ (root)`**, then save.
-3. It goes live at `https://<user>.github.io/<repo>/` after a minute or so.
+To switch it on once: **Settings → Pages → Source: GitHub Actions**. That
+replaces the "Deploy from a branch" setting — pick one or the other, not both.
+The site lands at `https://<user>.github.io/<repo>/`.
 
-Everything is referenced with relative `./` paths, so the project subpath in that
-URL is fine, and `.nojekyll` stops Jekyll from touching the files on the way out.
-Pages serves over HTTPS, so the service worker registers and the game is
-installable and playable offline straight from there.
+There is no build step; the repository root *is* the site. Everything is
+referenced with relative `./` paths, so the project subpath in that URL resolves
+fine, and `.nojekyll` stops Jekyll from touching the files on the way out. Pages
+serves over HTTPS, so the service worker registers and the game is installable
+and playable offline straight from there.
+
+Prefer no Actions at all? **Settings → Pages → Source: Deploy from a branch →
+`main` / `(root)`** works identically — delete the workflow if you go that way.
 
 ### Install it like an app
 
@@ -90,6 +95,7 @@ src/
 vendor/three/         pinned three.js build (r180), MIT
 tools/serve.mjs       zero-dependency static server for local play
 tools/smoke.mjs       headless Chromium smoke test (optional, needs playwright)
+.github/workflows/    GitHub Pages deploy on push to main
 ```
 
 ### Graphics notes

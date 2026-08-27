@@ -1,0 +1,41 @@
+# Publishes the game to GitHub Pages on every push to main.
+#
+# Requires Settings → Pages → Source: "GitHub Actions" (not "Deploy from a
+# branch" — picking Actions here replaces that setting).
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# GITHUB_TOKEN needs to publish the Pages artifact and mint the deploy's OIDC token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; queue instead of cancelling a publish midway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      # The game is static, so the repository root is the site. No build step.
+      # .nojekyll ships with it, so Pages serves every file verbatim.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
