@@ -25,6 +25,24 @@ just serve the repository root.
 > It must be served over HTTP(S), not opened as a `file://` URL — ES modules and
 > the service worker both require an origin.
 
+### GitHub Pages
+
+`.github/workflows/deploy.yml` publishes the site on every push to `main`
+(and on demand via *Actions → Deploy to GitHub Pages → Run workflow*).
+
+To switch it on once: **Settings → Pages → Source: GitHub Actions**. That
+replaces the "Deploy from a branch" setting — pick one or the other, not both.
+The site lands at `https://<user>.github.io/<repo>/`.
+
+There is no build step; the repository root *is* the site. Everything is
+referenced with relative `./` paths, so the project subpath in that URL resolves
+fine, and `.nojekyll` stops Jekyll from touching the files on the way out. Pages
+serves over HTTPS, so the service worker registers and the game is installable
+and playable offline straight from there.
+
+Prefer no Actions at all? **Settings → Pages → Source: Deploy from a branch →
+`main` / `(root)`** works identically — delete the workflow if you go that way.
+
 ### Install it like an app
 
 There's a web app manifest and a service worker, so on iOS (Share → *Add to
@@ -77,6 +95,7 @@ src/
 vendor/three/         pinned three.js build (r180), MIT
 tools/serve.mjs       zero-dependency static server for local play
 tools/smoke.mjs       headless Chromium smoke test (optional, needs playwright)
+.github/workflows/    GitHub Pages deploy on push to main
 ```
 
 ### Graphics notes
