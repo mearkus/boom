@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>KABOOM // NEON</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="description" content="A neon remake of the classic Kaboom! — catch the Mad Bomber's bombs before they hit the ground." />
+<meta name="theme-color" content="#05060f" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Kaboom" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="./assets/icon-180.png" />
+<link rel="stylesheet" href="./styles.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.min.js"
+  }
+}
+</script>
+</head>
+<body>
+  <canvas id="gl"></canvas>
+
+  <div id="ui">
+    <!-- ── Heads-up display ───────────────────────────────────────────── -->
+    <header id="hud" class="hidden">
+      <div class="hud-block hud-left">
+        <div class="hud-label">SCORE</div>
+        <div class="hud-value" id="score">0</div>
+        <div class="hud-sub" id="best">BEST 0</div>
+      </div>
+      <div class="hud-block hud-mid">
+        <div class="hud-label">WAVE</div>
+        <div class="hud-value" id="wave">1</div>
+        <div class="hud-sub" id="bombsLeft">10 LEFT</div>
+      </div>
+      <div class="hud-block hud-right">
+        <div class="hud-label">BUCKETS</div>
+        <div class="bucket-pips" id="pips"></div>
+        <button id="pauseBtn" class="icon-btn" aria-label="Pause">❚❚</button>
+      </div>
+    </header>
+
+    <div id="streak" class="hidden"></div>
+    <div id="toast" class="hidden"></div>
+
+    <!-- ── Title screen ───────────────────────────────────────────────── -->
+    <section id="titleScreen" class="screen">
+      <div class="panel">
+        <h1 class="logo"><span class="logo-ka">KA</span><span class="logo-boom">BOOM</span></h1>
+        <p class="tagline">The Mad Bomber is back. Don't drop one.</p>
+        <button id="playBtn" class="btn btn-primary">TAP TO PLAY</button>
+        <div class="row">
+          <button id="howBtn" class="btn btn-ghost">HOW TO PLAY</button>
+          <button id="settingsBtn" class="btn btn-ghost">SETTINGS</button>
+        </div>
+        <p class="best-line">BEST <span id="bestTitle">0</span></p>
+      </div>
+    </section>
+
+    <!-- ── How to play ────────────────────────────────────────────────── -->
+    <section id="howScreen" class="screen hidden">
+      <div class="panel">
+        <h2>HOW TO PLAY</h2>
+        <ul class="how">
+          <li><b>Catch every bomb.</b> Slide your buckets under them before they hit the floor.</li>
+          <li><b>Miss one</b> and the whole screen detonates — you lose a bucket and the wave restarts.</li>
+          <li><b>Each wave</b> the Bomber throws more, throws faster, and each bomb is worth more (up to 8).</li>
+          <li><b>Every 1,000 points</b> earns a replacement bucket, up to three.</li>
+          <li><b>Streak 25+</b> catches without a miss to double every bomb's value.</li>
+        </ul>
+        <button class="btn btn-primary back-btn">BACK</button>
+      </div>
+    </section>
+
+    <!-- ── Settings ───────────────────────────────────────────────────── -->
+    <section id="settingsScreen" class="screen hidden">
+      <div class="panel">
+        <h2>SETTINGS</h2>
+        <div class="setting">
+          <div class="setting-label">CONTROL</div>
+          <div class="seg" id="controlSeg">
+            <button data-value="drag">Drag</button>
+            <button data-value="direct">Direct</button>
+            <button data-value="tilt">Tilt</button>
+          </div>
+          <p class="hint" id="controlHint"></p>
+        </div>
+        <div class="setting">
+          <div class="setting-label">SENSITIVITY</div>
+          <input id="sensSlider" type="range" min="0.6" max="2.4" step="0.1" value="1.4" />
+        </div>
+        <div class="setting">
+          <div class="setting-label">GRAPHICS</div>
+          <div class="seg" id="qualitySeg">
+            <button data-value="low">Low</button>
+            <button data-value="auto">Auto</button>
+            <button data-value="high">High</button>
+          </div>
+        </div>
+        <div class="setting toggles">
+          <label class="toggle"><input type="checkbox" id="soundToggle" checked /><span>Sound</span></label>
+          <label class="toggle"><input type="checkbox" id="hapticToggle" checked /><span>Haptics</span></label>
+        </div>
+        <button class="btn btn-primary back-btn">BACK</button>
+      </div>
+    </section>
+
+    <!-- ── Pause ──────────────────────────────────────────────────────── -->
+    <section id="pauseScreen" class="screen hidden">
+      <div class="panel">
+        <h2>PAUSED</h2>
+        <button id="resumeBtn" class="btn btn-primary">RESUME</button>
+        <div class="row">
+          <button id="pauseSettingsBtn" class="btn btn-ghost">SETTINGS</button>
+          <button id="quitBtn" class="btn btn-ghost">QUIT</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Game over ──────────────────────────────────────────────────── -->
+    <section id="overScreen" class="screen hidden">
+      <div class="panel">
+        <h2 id="overTitle">THE BOMBER WINS</h2>
+        <div class="final">
+          <div class="final-score" id="finalScore">0</div>
+          <div class="final-sub" id="finalSub">WAVE 1 · BEST 0</div>
+        </div>
+        <div id="newBest" class="new-best hidden">NEW PERSONAL BEST</div>
+        <button id="againBtn" class="btn btn-primary">PLAY AGAIN</button>
+        <button id="menuBtn" class="btn btn-ghost">MAIN MENU</button>
+      </div>
+    </section>
+
+    <div id="rotateHint" class="hidden">Turn your device upright for the best view</div>
+    <div id="fatal" class="hidden"></div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "kaboom-neon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A neon, mobile-first remake of the classic Kaboom! built with three.js",
+  "type": "module",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "serve": "node tools/serve.mjs",
+    "vendor:three": "cp node_modules/three/build/three.module.min.js node_modules/three/build/three.core.min.js node_modules/three/LICENSE vendor/three/",
+    "smoke": "node tools/smoke.mjs"
+  },
+  "devDependencies": {
+    "three": "0.180.0"
+  }
+}
