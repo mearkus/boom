@@ -25,6 +25,19 @@ just serve the repository root.
 > It must be served over HTTP(S), not opened as a `file://` URL — ES modules and
 > the service worker both require an origin.
 
+### GitHub Pages
+
+It runs on Pages as-is — no build step, no Actions workflow needed:
+
+1. **Settings → Pages → Source: Deploy from a branch**
+2. Pick the branch and **`/ (root)`**, then save.
+3. It goes live at `https://<user>.github.io/<repo>/` after a minute or so.
+
+Everything is referenced with relative `./` paths, so the project subpath in that
+URL is fine, and `.nojekyll` stops Jekyll from touching the files on the way out.
+Pages serves over HTTPS, so the service worker registers and the game is
+installable and playable offline straight from there.
+
 ### Install it like an app
 
 There's a web app manifest and a service worker, so on iOS (Share → *Add to
