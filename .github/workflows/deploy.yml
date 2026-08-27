@@ -29,7 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # enablement creates the Pages site if it doesn't exist yet, so a fresh
+      # clone or a repo where Pages was never switched on deploys on the first
+      # push instead of failing with "Get Pages site failed".
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       # The game is static, so the repository root is the site. No build step.
       # .nojekyll ships with it, so Pages serves every file verbatim.
