@@ -16,6 +16,7 @@ export class Buckets {
     scene.add(this.group);
 
     this.x = 0;
+    this.prevX = 0;       // start-of-frame x, so catches can be resolved sub-frame
     this.targetX = 0;
     this.vx = 0;
     this.count = CONFIG.startBuckets;
@@ -141,18 +142,20 @@ export class Buckets {
     });
   }
 
-  /** Test a bomb against the mouth of the top bucket. */
-  catches(bx, by, prevY) {
+  /**
+   * Is a bomb at `bombX` inside the mouth of the top bucket, given the bucket
+   * is at `bucketX`? The caller passes the bucket's position at the instant the
+   * bomb crossed the rim, which is partway through the frame — sampling the
+   * end-of-frame position instead would misjudge fast crossings.
+   */
+  catchesAt(bombX, bucketX) {
     if (this.count <= 0) return false;
-    const line = this.catchY;
-    if (prevY >= line && by <= line) {
-      return Math.abs(bx - this.x) <= CONFIG.bucketRadius + CONFIG.bombRadius * 0.55;
-    }
-    return false;
+    return Math.abs(bombX - bucketX) <= CONFIG.bucketRadius + CONFIG.bombRadius * 0.55;
   }
 
   reset() {
     this.x = 0;
+    this.prevX = 0;       // start-of-frame x, so catches can be resolved sub-frame
     this.targetX = 0;
     this.vx = 0;
     this.setCount(CONFIG.startBuckets, true);
@@ -162,13 +165,18 @@ export class Buckets {
     this.time += dt;
     const limit = halfW - CONFIG.bucketRadius;
     this.targetX = THREE.MathUtils.clamp(this.targetX, -limit, limit);
+    this.prevX = this.x;
 
-    // Critically-damped chase with a hard speed cap so it always feels physical.
-    const desired = (this.targetX - this.x) / Math.max(dt, 1 / 240);
-    const capped = THREE.MathUtils.clamp(desired, -CONFIG.bucketMaxSpeed, CONFIG.bucketMaxSpeed);
-    const smooth = 1 - Math.pow(CONFIG.bucketSmoothing, dt);
-    this.vx = capped * smooth + this.vx * (1 - smooth);
-    this.x = THREE.MathUtils.clamp(this.x + this.vx * dt, -limit, limit);
+    // Exponential approach to the target, then a hard cap on the distance
+    // covered. Both terms are exact functions of elapsed time, so the bucket
+    // lands in the same place at 30, 60 or 120fps and doesn't flinch when a
+    // frame runs long. (The previous law scaled with 1/dt on one side and with
+    // dt on the other, so every hitch in frame timing moved the buckets.)
+    const alpha = 1 - Math.exp(-dt / CONFIG.bucketResponse);
+    const maxStep = CONFIG.bucketMaxSpeed * dt;
+    const step = THREE.MathUtils.clamp((this.targetX - this.x) * alpha, -maxStep, maxStep);
+    this.x = THREE.MathUtils.clamp(this.x + step, -limit, limit);
+    this.vx = (this.x - this.prevX) / Math.max(dt, 1e-4);
 
     this.group.position.x = this.x;
     this.group.position.y = this.baseY;

@@ -431,7 +431,7 @@ export class World {
     this.stars.material.uniforms.uTime.value = this.time;
 
     // Parallax follows the player's horizontal position.
-    this.parallax += (focusX - this.parallax) * Math.min(1, dt * 4);
+    this.parallax += (focusX - this.parallax) * (1 - Math.exp(-dt * 4));
     for (const s of this.skylines) s.position.x = -this.parallax * s.userData.factor * 3.2;
     this.stars.position.x = -this.parallax * 0.22;
 
